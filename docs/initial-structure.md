@@ -39,7 +39,7 @@ There is no need for a separate worker service, messaging layer, or a dedicated 
     MarketFeedMonitor.Infrastructure/
     market-feed-monitor-web/
   tests/
-    MarketFeedMonitor.Api.Tests/   (optional later)
+    MarketFeedMonitor.Api.Tests/
 ```
 
 ## Suggested Project Names
@@ -49,7 +49,7 @@ There is no need for a separate worker service, messaging layer, or a dedicated 
 - Core models and rules: `MarketFeedMonitor.Core`
 - Database and integrations: `MarketFeedMonitor.Infrastructure`
 - Frontend app: `market-feed-monitor-web`
-- Test project later if needed: `MarketFeedMonitor.Api.Tests`
+- Test project: `MarketFeedMonitor.Api.Tests`
 
 ## Suggested Namespaces
 
