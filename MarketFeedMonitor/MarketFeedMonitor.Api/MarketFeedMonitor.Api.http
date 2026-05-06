@@ -1,0 +1,6 @@
+@MarketFeedMonitor.Api_HostAddress = http://localhost:5071
+
+GET {{MarketFeedMonitor.Api_HostAddress}}/api/system/ping
+Accept: application/json
+
+###
