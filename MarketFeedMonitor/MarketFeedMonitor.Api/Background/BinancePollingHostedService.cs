@@ -1,9 +1,11 @@
-﻿using MarketFeedMonitor.Api.External;
+using MarketFeedMonitor.Api.External;
+using MarketFeedMonitor.Api.Services;
 using Microsoft.Extensions.Options;
 
 namespace MarketFeedMonitor.Api.Background;
 
 public sealed class BinancePollingHostedService(
+    IServiceScopeFactory serviceScopeFactory,
     IOptionsMonitor<BinanceOptions> optionsMonitor,
     ILogger<BinancePollingHostedService> logger) : BackgroundService
 {
@@ -13,7 +15,7 @@ public sealed class BinancePollingHostedService(
         var interval = TimeSpan.FromSeconds(Math.Max(options.PollIntervalSeconds, 1));
 
         logger.LogInformation(
-            "Binance polling skeleton started. Interval: {IntervalSeconds}s. Instruments: {Instruments}",
+            "Binance polling started. Interval: {IntervalSeconds}s. Instruments: {Instruments}",
             interval.TotalSeconds,
             string.Join(", ", options.Instruments));
 
@@ -23,12 +25,35 @@ public sealed class BinancePollingHostedService(
         {
             while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                logger.LogDebug("Binance polling skeleton tick.");
+                await FetchSnapshotsAsync(stoppingToken);
             }
         }
         catch (OperationCanceledException)
         {
-            logger.LogInformation("Binance polling skeleton stopped.");
+            logger.LogInformation("Binance polling stopped.");
+        }
+    }
+
+    private async Task FetchSnapshotsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var scope = serviceScopeFactory.CreateScope();
+            var ingestionService = scope.ServiceProvider.GetRequiredService<MarketDataIngestionService>();
+
+            var result = await ingestionService.FetchBinanceSnapshotsAsync(cancellationToken);
+
+            logger.LogInformation(
+                "Binance polling saved {SnapshotCount} snapshots.",
+                result.SavedSnapshots);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Binance polling failed.");
         }
     }
 }
