@@ -1,11 +1,14 @@
-﻿using MarketFeedMonitor.Api.Services;
+﻿using MarketFeedMonitor.Api.Data;
+using MarketFeedMonitor.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace MarketFeedMonitor.Api.Controllers;
 
 [ApiController]
 [Route("api/market-data")]
 public sealed class MarketDataController(
+    MarketFeedMonitorDbContext dbContext,
     MarketDataIngestionService marketDataIngestionService,
     ILogger<MarketDataController> logger) : ControllerBase
 {
@@ -42,5 +45,24 @@ public sealed class MarketDataController(
                 detail: exception.Message,
                 statusCode: StatusCodes.Status500InternalServerError);
         }
+    }
+
+    [HttpGet("feed-statuses")]
+    public async Task<IActionResult> GetFeedStatuses(CancellationToken cancellationToken)
+    {
+        var feedStatuses = await dbContext.FeedStatuses
+            .OrderBy(feedStatus => feedStatus.Source)
+            .Select(feedStatus => new
+            {
+                source = feedStatus.Source.ToString(),
+                isActive = feedStatus.IsActive,
+                lastAttemptAt = feedStatus.LastAttemptAt,
+                lastSuccessfulFetchAt = feedStatus.LastSuccessfulFetchAt,
+                consecutiveFailures = feedStatus.ConsecutiveFailures,
+                status = feedStatus.Status.ToString()
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(feedStatuses);
     }
 }
