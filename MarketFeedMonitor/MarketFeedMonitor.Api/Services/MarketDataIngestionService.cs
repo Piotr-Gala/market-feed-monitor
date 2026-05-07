@@ -30,8 +30,19 @@ public sealed class MarketDataIngestionService(
             "Starting manual Binance ingestion for {InstrumentCount} instruments.",
             configuredSymbols.Length);
 
-        var quotes = await binanceClient.GetLatestPricesAsync(configuredSymbols, cancellationToken);
+        IReadOnlyCollection<BinancePriceQuote> quotes;
         var now = DateTimeOffset.UtcNow;
+
+        try
+        {
+            quotes = await binanceClient.GetLatestPricesAsync(configuredSymbols, cancellationToken);
+        }
+        catch
+        {
+            await MarkFeedFailureAsync(DataSourceType.Binance, now, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+            throw;
+        }
 
         var existingInstruments = (await dbContext.Instruments
                 .Where(instrument => configuredSymbols.Contains(instrument.Symbol))
@@ -83,6 +94,7 @@ public sealed class MarketDataIngestionService(
         }).ToArray();
 
         dbContext.Snapshots.AddRange(snapshots);
+        await MarkFeedSuccessAsync(DataSourceType.Binance, now, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation(
@@ -96,6 +108,56 @@ public sealed class MarketDataIngestionService(
             createdInstruments,
             now);
     }
+
+    private async Task MarkFeedSuccessAsync(
+        DataSourceType source,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var feedStatus = await dbContext.FeedStatuses
+            .SingleOrDefaultAsync(status => status.Source == source, cancellationToken);
+
+        if (feedStatus is null)
+        {
+            feedStatus = new FeedStatus
+            {
+                Source = source
+            };
+
+            dbContext.FeedStatuses.Add(feedStatus);
+        }
+
+        feedStatus.IsActive = true;
+        feedStatus.LastAttemptAt = now;
+        feedStatus.LastSuccessfulFetchAt = now;
+        feedStatus.ConsecutiveFailures = 0;
+        feedStatus.Status = FeedState.Healthy;
+    }
+
+    private async Task MarkFeedFailureAsync(
+        DataSourceType source,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var feedStatus = await dbContext.FeedStatuses
+            .SingleOrDefaultAsync(status => status.Source == source, cancellationToken);
+
+        if (feedStatus is null)
+        {
+            feedStatus = new FeedStatus
+            {
+                Source = source
+            };
+
+            dbContext.FeedStatuses.Add(feedStatus);
+        }
+
+        feedStatus.IsActive = true;
+        feedStatus.LastAttemptAt = now;
+        feedStatus.ConsecutiveFailures += 1;
+        feedStatus.Status = FeedState.Down;
+    }
+
 }
 
 public sealed record MarketDataIngestionResult(
