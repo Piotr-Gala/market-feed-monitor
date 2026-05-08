@@ -1,4 +1,5 @@
 ﻿using MarketFeedMonitor.Api.Data;
+using MarketFeedMonitor.Api.Models;
 using MarketFeedMonitor.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -100,4 +101,52 @@ public sealed class MarketDataController(
         return Ok(latestSnapshots);
     }
 
+    [HttpGet("feed-summary")]
+    public async Task<IActionResult> GetFeedSummary(CancellationToken cancellationToken)
+    {
+        var trackedInstruments = await dbContext.Instruments
+            .CountAsync(instrument => instrument.IsTracked, cancellationToken);
+
+        var storedSnapshots = await dbContext.Snapshots
+            .CountAsync(cancellationToken);
+
+        var activeAlerts = await dbContext.Alerts
+            .CountAsync(alert => alert.IsActive, cancellationToken);
+
+        var totalFeeds = await dbContext.FeedStatuses
+            .CountAsync(cancellationToken);
+
+        var healthyFeeds = await dbContext.FeedStatuses
+            .CountAsync(feedStatus => feedStatus.Status == FeedState.Healthy, cancellationToken);
+
+        var staleFeeds = await dbContext.FeedStatuses
+            .CountAsync(feedStatus => feedStatus.Status == FeedState.Stale, cancellationToken);
+
+        var downFeeds = await dbContext.FeedStatuses
+            .CountAsync(feedStatus => feedStatus.Status == FeedState.Down, cancellationToken);
+
+        var lastSnapshotReceivedAt = await dbContext.Snapshots
+            .Select(snapshot => (DateTimeOffset?)snapshot.ReceivedAt)
+            .MaxAsync(cancellationToken);
+
+        var lastSuccessfulFetchAt = await dbContext.FeedStatuses
+            .Select(feedStatus => feedStatus.LastSuccessfulFetchAt)
+            .MaxAsync(cancellationToken);
+
+        return Ok(new
+        {
+            trackedInstruments,
+            storedSnapshots,
+            activeAlerts,
+            feeds = new
+            {
+                total = totalFeeds,
+                healthy = healthyFeeds,
+                stale = staleFeeds,
+                down = downFeeds
+            },
+            lastSnapshotReceivedAt,
+            lastSuccessfulFetchAt
+        });
+    }
 }
