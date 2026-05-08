@@ -65,4 +65,39 @@ public sealed class MarketDataController(
 
         return Ok(feedStatuses);
     }
+
+    [HttpGet("latest-snapshots")]
+    public async Task<IActionResult> GetLatestSnapshots(CancellationToken cancellationToken)
+    {
+        var latestSnapshotTimes = dbContext.Snapshots
+            .GroupBy(snapshot => snapshot.InstrumentId)
+            .Select(group => new
+            {
+                InstrumentId = group.Key,
+                ReceivedAt = group.Max(snapshot => snapshot.ReceivedAt)
+            });
+
+        var latestSnapshots = await dbContext.Snapshots
+            .Join(
+                latestSnapshotTimes,
+                snapshot => new { snapshot.InstrumentId, snapshot.ReceivedAt },
+                latest => new { latest.InstrumentId, latest.ReceivedAt },
+                (snapshot, latest) => snapshot)
+            .OrderBy(snapshot => snapshot.Instrument.Symbol)
+            .Select(snapshot => new
+            {
+                symbol = snapshot.Instrument.Symbol,
+                name = snapshot.Instrument.Name,
+                assetType = snapshot.Instrument.AssetType.ToString(),
+                source = snapshot.Source.ToString(),
+                price = snapshot.Price,
+                change1hPercent = snapshot.Change1hPercent,
+                sourceTimestamp = snapshot.SourceTimestamp,
+                receivedAt = snapshot.ReceivedAt
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(latestSnapshots);
+    }
+
 }
