@@ -149,4 +149,24 @@ public sealed class MarketDataController(
             lastSuccessfulFetchAt
         });
     }
+    
+    [HttpGet("active-alerts")]
+    public async Task<IActionResult> GetActiveAlerts(CancellationToken cancellationToken)
+    {
+        var activeAlerts = await dbContext.Alerts
+            .Where(alert => alert.IsActive)
+            .OrderByDescending(alert => alert.CreatedAt)
+            .Select(alert => new
+            {
+                id = alert.Id,
+                symbol = alert.Instrument.Symbol,
+                alertType = alert.AlertType.ToString(),
+                severity = alert.Severity.ToString(),
+                message = alert.Message,
+                createdAt = alert.CreatedAt
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(activeAlerts);
+    }
 }
