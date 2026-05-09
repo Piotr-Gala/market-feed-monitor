@@ -12,6 +12,7 @@ public sealed class MarketDataIngestionService(
     MarketFeedMonitorDbContext dbContext,
     IOptionsMonitor<BinanceOptions> binanceOptionsMonitor,
     IOptionsMonitor<AlertOptions> alertOptionsMonitor,
+    AlertService alertService,
     ILogger<MarketDataIngestionService> logger)
 
 {
@@ -135,6 +136,12 @@ public sealed class MarketDataIngestionService(
         feedStatus.LastSuccessfulFetchAt = now;
         feedStatus.ConsecutiveFailures = 0;
         feedStatus.Status = FeedState.Healthy;
+
+        await alertService.SyncFeedAlertsAsync(
+            source,
+            feedStatus.Status,
+            now,
+            cancellationToken);
     }
 
     private async Task MarkFeedFailureAsync(
@@ -160,6 +167,11 @@ public sealed class MarketDataIngestionService(
         feedStatus.ConsecutiveFailures += 1;
         feedStatus.Status = GetFeedState(feedStatus.ConsecutiveFailures);
 
+        await alertService.SyncFeedAlertsAsync(
+            source,
+            feedStatus.Status,
+            now,
+            cancellationToken);
     }
 
     private FeedState GetFeedState(int consecutiveFailures)
