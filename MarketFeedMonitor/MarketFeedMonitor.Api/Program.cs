@@ -39,6 +39,7 @@ builder.Services.AddHttpClient<BinanceClient>((serviceProvider, httpClient) =>
 });
 
 builder.Services.AddScoped<MarketDataIngestionService>();
+builder.Services.AddScoped<AlertService>();
 builder.Services.AddHostedService<BinancePollingHostedService>();
 builder.Services.AddHostedService<TwelveDataPollingHostedService>();
 
