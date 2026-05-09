@@ -1,4 +1,4 @@
-using MarketFeedMonitor.Api.External;
+using MarketFeedMonitor.Api.Options;
 using MarketFeedMonitor.Api.Services;
 using Microsoft.Extensions.Options;
 

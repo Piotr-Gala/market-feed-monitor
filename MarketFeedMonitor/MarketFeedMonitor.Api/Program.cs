@@ -2,6 +2,7 @@
 using MarketFeedMonitor.Api.Data;
 using MarketFeedMonitor.Api.External;
 using MarketFeedMonitor.Api.Services;
+using MarketFeedMonitor.Api.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -16,6 +17,9 @@ builder.Services.Configure<BinanceOptions>(
     builder.Configuration.GetSection(BinanceOptions.SectionName));
 builder.Services.Configure<TwelveDataOptions>(
     builder.Configuration.GetSection(TwelveDataOptions.SectionName));
+builder.Services.Configure<AlertOptions>(
+    builder.Configuration.GetSection(AlertOptions.SectionName));
+
 
 var connectionString = builder.Configuration.GetConnectionString("Postgres")
     ?? throw new InvalidOperationException("Connection string 'Postgres' is missing.");

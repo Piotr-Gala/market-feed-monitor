@@ -1,4 +1,4 @@
-﻿using MarketFeedMonitor.Api.External;
+﻿using MarketFeedMonitor.Api.Options;
 using Microsoft.Extensions.Options;
 
 namespace MarketFeedMonitor.Api.Background;

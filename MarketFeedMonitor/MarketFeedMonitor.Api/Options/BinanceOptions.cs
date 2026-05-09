@@ -1,4 +1,4 @@
-﻿namespace MarketFeedMonitor.Api.External;
+﻿namespace MarketFeedMonitor.Api.Options;
 
 public sealed class BinanceOptions
 {

@@ -1,6 +1,7 @@
 ﻿using MarketFeedMonitor.Api.Data;
 using MarketFeedMonitor.Api.External;
 using MarketFeedMonitor.Api.Models;
+using MarketFeedMonitor.Api.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
