@@ -10,13 +10,15 @@ namespace MarketFeedMonitor.Api.Services;
 public sealed class MarketDataIngestionService(
     BinanceClient binanceClient,
     MarketFeedMonitorDbContext dbContext,
-    IOptionsMonitor<BinanceOptions> optionsMonitor,
+    IOptionsMonitor<BinanceOptions> binanceOptionsMonitor,
+    IOptionsMonitor<AlertOptions> alertOptionsMonitor,
     ILogger<MarketDataIngestionService> logger)
+
 {
     public async Task<MarketDataIngestionResult> FetchBinanceSnapshotsAsync(
         CancellationToken cancellationToken = default)
     {
-        var configuredSymbols = optionsMonitor.CurrentValue.Instruments
+        var configuredSymbols = binanceOptionsMonitor.CurrentValue.Instruments
             .Where(symbol => !string.IsNullOrWhiteSpace(symbol))
             .Select(symbol => symbol.Trim().ToUpperInvariant())
             .Distinct(StringComparer.Ordinal)
@@ -156,9 +158,23 @@ public sealed class MarketDataIngestionService(
         feedStatus.IsActive = true;
         feedStatus.LastAttemptAt = now;
         feedStatus.ConsecutiveFailures += 1;
-        feedStatus.Status = FeedState.Down;
+        feedStatus.Status = GetFeedState(feedStatus.ConsecutiveFailures);
+
     }
 
+    private FeedState GetFeedState(int consecutiveFailures)
+    {
+        if (consecutiveFailures <= 0)
+        {
+            return FeedState.Healthy;
+        }
+
+        var threshold = Math.Max(alertOptionsMonitor.CurrentValue.ConsecutiveFailureThreshold, 1);
+
+        return consecutiveFailures >= threshold
+            ? FeedState.Down
+            : FeedState.Stale;
+    }
 }
 
 public sealed record MarketDataIngestionResult(

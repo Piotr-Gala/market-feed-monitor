@@ -20,7 +20,6 @@ builder.Services.Configure<TwelveDataOptions>(
 builder.Services.Configure<AlertOptions>(
     builder.Configuration.GetSection(AlertOptions.SectionName));
 
-
 var connectionString = builder.Configuration.GetConnectionString("Postgres")
     ?? throw new InvalidOperationException("Connection string 'Postgres' is missing.");
 
