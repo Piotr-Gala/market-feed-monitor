@@ -67,7 +67,7 @@ public sealed class MarketDataIngestionService(
             var instrument = new InstrumentDefinition
             {
                 Symbol = symbol,
-                Name = symbol,
+                Name = GetInstrumentName(symbol),
                 AssetType = AssetType.Crypto,
                 PrimarySource = DataSourceType.Binance,
                 IsTracked = true
@@ -111,6 +111,16 @@ public sealed class MarketDataIngestionService(
             snapshots.Length,
             createdInstruments,
             now);
+    }
+
+    private static string GetInstrumentName(string symbol)
+    {
+        return symbol switch
+        {
+            "BTCUSDT" => "Bitcoin",
+            "ETHUSDT" => "Ethereum",
+            _ => symbol
+        };
     }
 
     private async Task MarkFeedSuccessAsync(
