@@ -174,7 +174,9 @@ function App() {
                 <td>{snapshot.name}</td>
                 <td>{snapshot.assetType}</td>
                 <td>{formatPrice(snapshot.price)}</td>
-                <td>{formatPercent(snapshot.change1hPercent)}</td>
+                <td>
+                  <ChangeBadge value={snapshot.change1hPercent} />
+                </td>
                 <td>{snapshot.source}</td>
                 <td>
                   <StatusBadge status={getFeedStatus(snapshot.source, data.feedStatuses)} />
@@ -276,6 +278,22 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`status-badge status-${status.toLowerCase()}`}>{status}</span>
 }
 
+function ChangeBadge({ value }: { value: number | null }) {
+  if (value === null) {
+    return <span className="change-badge change-neutral">Collecting</span>
+  }
+
+  const tone = value > 0 ? 'positive' : value < 0 ? 'negative' : 'neutral'
+  const sign = value > 0 ? '+' : ''
+
+  return (
+    <span className={`change-badge change-${tone}`}>
+      {sign}
+      {value.toFixed(2)}%
+    </span>
+  )
+}
+
 function getFeedStatus(source: string, feedStatuses: FeedStatus[]) {
   return feedStatuses.find((feedStatus) => feedStatus.source === source)?.status ?? 'Unknown'
 }
@@ -295,14 +313,6 @@ function formatPrice(value: number) {
   return new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 6,
   }).format(value)
-}
-
-function formatPercent(value: number | null) {
-  if (value === null) {
-    return '-'
-  }
-
-  return `${value.toFixed(2)}%`
 }
 
 export default App
