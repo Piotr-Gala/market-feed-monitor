@@ -4,3 +4,6 @@
 .history/
 *.user
 *.suo
+**/node_modules/
+**/dist/
+**/.vite/
