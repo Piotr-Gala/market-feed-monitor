@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import './App.css'
 
 const API_BASE_URL = 'http://localhost:5071/api/market-data'
+const REFRESH_INTERVAL_MS = 15000
 
 type FeedSummary = {
   trackedInstruments: number
@@ -59,6 +60,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    let isMounted = true
+
     async function loadDashboardData() {
       try {
         const [summaryResponse, snapshotsResponse, feedStatusesResponse, alertsResponse] =
@@ -85,15 +88,29 @@ function App() {
           alertsResponse.json(),
         ])
 
-        setData({ summary, snapshots, feedStatuses, activeAlerts })
+        if (isMounted) {
+          setData({ summary, snapshots, feedStatuses, activeAlerts })
+          setError(null)
+        }
       } catch (error) {
-        setError(error instanceof Error ? error.message : 'Unknown dashboard error.')
+        if (isMounted) {
+          setError(error instanceof Error ? error.message : 'Unknown dashboard error.')
+        }
       } finally {
-        setIsLoading(false)
+        if (isMounted) {
+          setIsLoading(false)
+        }
       }
     }
 
     loadDashboardData()
+
+    const intervalId = window.setInterval(loadDashboardData, REFRESH_INTERVAL_MS)
+
+    return () => {
+      isMounted = false
+      window.clearInterval(intervalId)
+    }
   }, [])
 
   if (isLoading) {
