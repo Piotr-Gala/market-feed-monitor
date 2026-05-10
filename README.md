@@ -4,6 +4,10 @@ Market Feed Monitor is a small internal-tool-style application for collecting ma
 
 The MVP is intentionally narrow. The goal is to build a clean end-to-end system that shows the full flow from ingestion to visibility, not to build a broad trading platform.
 
+## Dashboard Preview
+
+![Market Feed Monitor dashboard](docs/images/dashboard.png)
+
 ## MVP Scope
 
 The first version is limited to:
@@ -26,8 +30,8 @@ The initial instrument list is fixed to:
 
 - BTCUSDT
 - ETHUSDT
-- EURUSD
-- XAUUSD
+- EUR/USD
+- XAU/USD
 
 ## Confirmed Stack
 
@@ -51,7 +55,15 @@ docker compose up -d
 
 PostgreSQL is exposed on port `5433`.
 
-### 2. Start the Backend
+### 2. Configure Twelve Data API Key
+
+The Twelve Data API key is stored locally with .NET user secrets:
+
+```powershell
+dotnet user-secrets set "MarketData:Sources:TwelveData:ApiKey" "YOUR_API_KEY" --project MarketFeedMonitor/MarketFeedMonitor.Api
+```
+
+### 3. Start the Backend
 
 ```powershell
 cd MarketFeedMonitor/MarketFeedMonitor.Api
@@ -64,7 +76,7 @@ The backend runs on:
 http://localhost:5071
 ```
 
-### 3. Start the Frontend
+### 4. Start the Frontend
 
 ```powershell
 cd frontend
@@ -87,7 +99,7 @@ The dashboard uses these backend endpoints:
 - `GET /api/market-data/latest-snapshots`
 - `GET /api/market-data/active-alerts`
 
-Dashboard data refreshes automatically every 15 seconds.
+Dashboard data refreshes automatically every 15 seconds. It shows latest prices, feed health, active alerts, and 1h price change calculated from stored snapshots. If there is not enough snapshot history yet, the 1h change is shown as a collecting state.
 
 ## Useful Checks
 
