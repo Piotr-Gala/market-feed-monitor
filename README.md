@@ -41,6 +41,63 @@ The system should demonstrate this core flow:
 
 `ingest -> store snapshots -> evaluate feed health -> trigger alerts -> display status`
 
+## How to Run Locally
+
+### 1. Start PostgreSQL
+
+```powershell
+docker compose up -d
+```
+
+PostgreSQL is exposed on port `5433`.
+
+### 2. Start the Backend
+
+```powershell
+cd MarketFeedMonitor/MarketFeedMonitor.Api
+dotnet run
+```
+
+The backend runs on:
+
+```text
+http://localhost:5071
+```
+
+### 3. Start the Frontend
+
+```powershell
+cd frontend
+npm.cmd install
+npm.cmd run dev
+```
+
+The frontend runs on:
+
+```text
+http://localhost:5173
+```
+
+## Dashboard
+
+The dashboard uses these backend endpoints:
+
+- `GET /api/market-data/feed-summary`
+- `GET /api/market-data/feed-statuses`
+- `GET /api/market-data/latest-snapshots`
+- `GET /api/market-data/active-alerts`
+
+Dashboard data refreshes automatically every 15 seconds.
+
+## Useful Checks
+
+```powershell
+dotnet build MarketFeedMonitor/MarketFeedMonitor.sln
+cd frontend
+npm.cmd run lint
+npm.cmd run build
+```
+
 ## Out of Scope
 
 To keep the MVP focused, the following are explicitly out of scope:
