@@ -116,7 +116,7 @@ public sealed class MarketDataIngestionService(
     }
 
     public async Task<MarketDataIngestionResult> FetchTwelveDataSnapshotsAsync(
-    CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default)
     {
         var configuredSymbols = twelveDataOptionsMonitor.CurrentValue.Instruments
             .Where(symbol => !string.IsNullOrWhiteSpace(symbol))
@@ -219,6 +219,7 @@ public sealed class MarketDataIngestionService(
             "BTCUSDT" => "Bitcoin",
             "ETHUSDT" => "Ethereum",
             "EUR/USD" => "Euro / US Dollar",
+            "XAU/USD" => "Gold / US Dollar",
             _ => symbol
         };
     }
