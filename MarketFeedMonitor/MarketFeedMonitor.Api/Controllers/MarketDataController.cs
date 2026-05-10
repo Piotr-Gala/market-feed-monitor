@@ -79,27 +79,48 @@ public sealed class MarketDataController(
             });
 
         var latestSnapshots = await dbContext.Snapshots
+            .Include(snapshot => snapshot.Instrument)
             .Join(
                 latestSnapshotTimes,
                 snapshot => new { snapshot.InstrumentId, snapshot.ReceivedAt },
                 latest => new { latest.InstrumentId, latest.ReceivedAt },
                 (snapshot, latest) => snapshot)
             .OrderBy(snapshot => snapshot.Instrument.Symbol)
-            .Select(snapshot => new
+            .ToListAsync(cancellationToken);
+
+        var response = new List<object>();
+
+        foreach (var snapshot in latestSnapshots)
+        {
+            var oneHourAgo = snapshot.ReceivedAt.AddHours(-1);
+
+            var comparisonSnapshot = await dbContext.Snapshots
+                .Where(candidate =>
+                    candidate.InstrumentId == snapshot.InstrumentId &&
+                    candidate.ReceivedAt <= oneHourAgo)
+                .OrderByDescending(candidate => candidate.ReceivedAt)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            var change1hPercent = comparisonSnapshot is null || comparisonSnapshot.Price == 0
+                ? (decimal?)null
+                : ((snapshot.Price - comparisonSnapshot.Price) / comparisonSnapshot.Price) * 100;
+
+            response.Add(new
             {
                 symbol = snapshot.Instrument.Symbol,
                 name = snapshot.Instrument.Name,
                 assetType = snapshot.Instrument.AssetType.ToString(),
                 source = snapshot.Source.ToString(),
                 price = snapshot.Price,
-                change1hPercent = snapshot.Change1hPercent,
+                change1hPercent,
                 sourceTimestamp = snapshot.SourceTimestamp,
                 receivedAt = snapshot.ReceivedAt
-            })
-            .ToListAsync(cancellationToken);
+            });
+        }
 
-        return Ok(latestSnapshots);
+        return Ok(response);
     }
+
 
     [HttpGet("feed-summary")]
     public async Task<IActionResult> GetFeedSummary(CancellationToken cancellationToken)
@@ -149,7 +170,7 @@ public sealed class MarketDataController(
             lastSuccessfulFetchAt
         });
     }
-    
+
     [HttpGet("active-alerts")]
     public async Task<IActionResult> GetActiveAlerts(CancellationToken cancellationToken)
     {
