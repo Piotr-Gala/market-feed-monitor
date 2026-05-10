@@ -48,6 +48,18 @@ builder.Services.AddHttpClient<BinanceClient>((serviceProvider, httpClient) =>
     httpClient.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
 });
 
+builder.Services.AddHttpClient<TwelveDataClient>((serviceProvider, httpClient) =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<TwelveDataOptions>>().Value;
+
+    if (string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        throw new InvalidOperationException("Twelve Data base URL is missing.");
+    }
+
+    httpClient.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
+});
+
 builder.Services.AddScoped<MarketDataIngestionService>();
 builder.Services.AddScoped<AlertService>();
 builder.Services.AddHostedService<BinancePollingHostedService>();
