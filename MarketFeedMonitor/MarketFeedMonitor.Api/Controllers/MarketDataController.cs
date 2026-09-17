@@ -13,6 +13,8 @@ public sealed class MarketDataController(
     MarketDataIngestionService marketDataIngestionService,
     ILogger<MarketDataController> logger) : ControllerBase
 {
+    private static readonly TimeSpan OneHourComparisonTolerance = TimeSpan.FromMinutes(15);
+
     [HttpPost("binance/fetch")]
     public async Task<IActionResult> FetchBinanceSnapshots(CancellationToken cancellationToken)
     {
@@ -93,10 +95,12 @@ public sealed class MarketDataController(
         foreach (var snapshot in latestSnapshots)
         {
             var oneHourAgo = snapshot.ReceivedAt.AddHours(-1);
+            var comparisonWindowStart = oneHourAgo - OneHourComparisonTolerance;
 
             var comparisonSnapshot = await dbContext.Snapshots
                 .Where(candidate =>
                     candidate.InstrumentId == snapshot.InstrumentId &&
+                    candidate.ReceivedAt >= comparisonWindowStart &&
                     candidate.ReceivedAt <= oneHourAgo)
                 .OrderByDescending(candidate => candidate.ReceivedAt)
                 .FirstOrDefaultAsync(cancellationToken);
